@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 import { useThemeStore } from "../store/useThemeStore";
-import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -33,7 +33,7 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className={`h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
+    <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
       <div className={`w-full max-w-md p-8 rounded-lg shadow-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <h2 className={`text-2xl font-bold mb-6 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
           Create Account
@@ -55,7 +55,7 @@ const SignUpPage = () => {
                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-teal-500' 
                     : 'bg-white border-gray-200 text-black placeholder-gray-500 focus:ring-lime-500'
                 }`}
-                placeholder="John Doe"
+                placeholder="Bhupindar Jogi"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 required
