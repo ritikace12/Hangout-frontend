@@ -174,37 +174,43 @@ const HomePage = () => {
   }, []);
 
   // Send message handler with real-time update
-  const handleSendMessage = async (text, image) => {
-    if (!selectedUser || (!text?.trim() && !image)) {
-      console.log("Message validation failed:", { selectedUser, text, image });
+  const handleSendMessage = async (message, tempMessageId = null) => {
+    if (!selectedUser) {
+      console.log("No user selected");
       return;
     }
 
-    // Optimistically add message to UI
-    const tempMessage = {
-      _id: Date.now().toString(),
-      text: text || "",
-      image,
-      senderId: authUser,
-      receiverId: selectedUser._id,
-      createdAt: new Date().toISOString(),
-      isTemp: true
-    };
+    if (tempMessageId) {
+      // Remove temporary message
+      setMessages(prev => prev.filter(msg => msg._id !== tempMessageId));
+      return;
+    }
 
-    setMessages(prev => [...prev, tempMessage]);
+    if (!message) {
+      console.log("No message to send");
+      return;
+    }
+
+    // Add message to UI
+    setMessages(prev => [...prev, message]);
 
     setIsLoadingSend(true);
     try {
-      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, {
-        text: text || "",
-        image
+      const formData = new FormData();
+      if (message.text) formData.append("message", message.text);
+      if (message.image) formData.append("image", message.image);
+
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
       const newMessage = res.data;
       
       // Replace temp message with actual message
       setMessages(prev => 
-        prev.map(msg => msg._id === tempMessage._id ? newMessage : msg)
+        prev.map(msg => msg._id === message._id ? newMessage : msg)
       );
 
       // Emit socket event for real-time update
@@ -231,7 +237,7 @@ const HomePage = () => {
       }
     } catch (error) {
       // Remove temp message if send failed
-      setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
+      setMessages(prev => prev.filter(msg => msg._id !== message._id));
       console.error("Error sending message:", error);
       toast.error(error.response?.data?.message || "Failed to send message");
     } finally {

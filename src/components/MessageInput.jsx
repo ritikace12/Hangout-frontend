@@ -24,7 +24,7 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
       if (message.trim()) formData.append("message", message.trim());
       if (image) formData.append("image", image);
 
-      // Optimistic update
+      // Create temporary message object
       const tempMessage = {
         _id: Date.now().toString(),
         text: message.trim(),
@@ -39,6 +39,7 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
         status: "sending",
       };
 
+      // Call onSendMessage with the temporary message
       onSendMessage(tempMessage);
       setMessage("");
       setImage(null);
