@@ -3,6 +3,7 @@ import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { toast } from "react-hot-toast";
 import { FiSend, FiImage } from "react-icons/fi";
+import axiosInstance from "../lib/axios";
 
 const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
   const [message, setMessage] = useState("");
@@ -23,7 +24,6 @@ const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
       if (message.trim()) formData.append("message", message.trim());
       if (image) formData.append("image", image);
 
-      // Create temporary message object
       const tempMessage = {
         _id: Date.now().toString(),
         text: message.trim(),
@@ -39,64 +39,19 @@ const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
       };
 
       tempMessageId = tempMessage._id;
-
-      // Call onSendMessage with the temporary message
-      onSendMessage(tempMessage);
+      onSendMessage(tempMessage, formData, tempMessageId);
       setMessage("");
       setImage(null);
 
-      // Emit typing status
       if (socket?.connected) {
         socket.emit("typing", { receiverId: selectedUser._id, isTyping: false });
       }
-
-      // Send message to server
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-
-      const data = await response.json();
-      
-      // Update the temporary message with the server response
-      onSendMessage({
-        ...tempMessage,
-        _id: data._id,
-        status: "sent",
-      });
-
-      // Emit socket event
-      if (socket?.connected) {
-        socket.emit("send-message", {
-          receiverId: selectedUser._id,
-          message: data,
-        });
-      }
-
     } catch (error) {
-      console.error("Error sending message:", error);
-      toast.error("Failed to send message");
-      // Remove the temporary message on error
-      if (tempMessageId) {
-        onSendMessage(null, tempMessageId);
-      }
+      console.error("Error preparing message:", error);
+      toast.error("Failed to prepare message");
+      onSendMessage({ ...tempMessage, status: "failed" }, null, tempMessageId);
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size should be less than 5MB");
-        return;
-      }
-      setImage(file);
     }
   };
 
@@ -104,6 +59,13 @@ const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    }
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
     }
   };
 
@@ -117,7 +79,7 @@ const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
           onChange={(e) => setMessage(e.target.value)}
           onKeyPress={handleKeyPress}
           className={`
-            flex-1 p-2 rounded-lg border
+            flex-1 p-2 rounded-lg border text-left
             ${isDarkMode 
               ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
               : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'

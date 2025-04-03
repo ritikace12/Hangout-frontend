@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "../store/useAuthStore";
 
 const axiosInstance = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}/api`,
@@ -13,8 +14,14 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
         if (error.response?.status === 401) {
-            // Clear auth state and redirect to login
-            window.location.href = '/login';
+            // Only redirect to login if we're not already on the login page
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('/login')) {
+                // Clear auth state
+                useAuthStore.getState().clearAuth();
+                // Redirect to login
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }

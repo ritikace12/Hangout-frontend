@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import LoadingSpinner from "./LoadingSpinner";
+import { FiCheck, FiCheckCircle } from "react-icons/fi";
 
 const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
   return (
@@ -39,9 +40,44 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
             loading="lazy"
           />
         )}
-        <span className={`text-xs mt-1 block ${isOwnMessage ? 'text-white/80' : isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        <div className="flex items-center justify-between mt-1">
+          <p className={`text-xs ${
+            message.senderId._id === authUser._id
+              ? isDarkMode
+                ? 'text-blue-200'
+                : 'text-blue-100'
+              : isDarkMode
+              ? 'text-gray-400'
+              : 'text-gray-500'
+          }`}>
+            {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+          </p>
+          {message.senderId._id === authUser._id && (
+            <div className="flex items-center ml-2">
+              {message.status === "sending" && (
+                <span className="text-xs">Sending...</span>
+              )}
+              {message.status === "sent" && (
+                <FiCheck className="w-3 h-3" />
+              )}
+              {message.status === "delivered" && (
+                <FiCheck className="w-3 h-3" />
+              )}
+              {message.status === "read" && (
+                <FiCheckCircle className="w-3 h-3 text-blue-300" />
+              )}
+              {message.status === "failed" && (
+                <span className="text-xs text-red-500">Failed</span>
+              )}
+              {message.status === "queued" && (
+                <span className="text-xs text-gray-400">Queued</span>
+              )}
+              {message.status === "offline" && (
+                <span className="text-xs text-gray-400">Will deliver when online</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -60,18 +96,6 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
     scrollToBottom();
   }, [messages]);
 
-  const formatMessageDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return "Just now";
-      }
-      return formatDistanceToNow(date, { addSuffix: true });
-    } catch (error) {
-      return "Just now";
-    }
-  };
-
   if (isLoadingMessages) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -81,7 +105,6 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
   }
 
   if (!Array.isArray(messages)) {
-    console.error("Messages is not an array:", messages);
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>No messages to display</div>
@@ -111,4 +134,4 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
   );
 };
 
-export default memo(Messages); 
+export default Messages; 
