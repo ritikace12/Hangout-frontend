@@ -78,12 +78,14 @@ const HomePage = () => {
 
       socketRef.current.on("message-received", (newMessage) => {
         console.log("Message received:", newMessage);
+        
         // Update last message for the sender
         setLastMessages(prev => ({
           ...prev,
           [newMessage.senderId._id]: newMessage
         }));
 
+        // If the message is from the selected user, add it to messages
         if (selectedUser?._id === newMessage.senderId._id) {
           setMessages(prev => [...prev, newMessage]);
         } else {
@@ -110,6 +112,14 @@ const HomePage = () => {
               </div>
             </div>
           ));
+        }
+      });
+
+      // Add new event listener for message sent
+      socketRef.current.on("message-sent", (newMessage) => {
+        console.log("Message sent:", newMessage);
+        if (selectedUser?._id === newMessage.receiverId) {
+          setMessages(prev => [...prev, newMessage]);
         }
       });
 
@@ -178,7 +188,7 @@ const HomePage = () => {
     // Optimistically add message to UI
     const tempMessage = {
       _id: Date.now().toString(),
-      text: text || "",  // Ensure text is always a string
+      text: text || "",
       image,
       senderId: authUser,
       receiverId: selectedUser._id,
@@ -192,7 +202,7 @@ const HomePage = () => {
     try {
       console.log("Making API request to:", `/messages/send/${selectedUser._id}`);
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, {
-        text: text || "",  // Ensure text is always a string
+        text: text || "",
         image
       });
 

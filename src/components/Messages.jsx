@@ -59,28 +59,24 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
           return (
             <div
               key={message._id}
-              className={`flex items-end gap-2 ${
-                isOwnMessage ? "justify-end" : "justify-start"
-              }`}
+              className={`flex items-end gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
             >
-              {!isOwnMessage && (
-                <img
-                  src={message.senderId.profilePic || "/avatar.jpg"}
-                  alt={message.senderId.fullName}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              )}
+              <img
+                src={isOwnMessage ? authUser.profilePic : message.senderId.profilePic || "/avatar.jpg"}
+                alt={isOwnMessage ? authUser.fullName : message.senderId.fullName}
+                className="w-8 h-8 rounded-full object-cover"
+              />
 
               <div
                 className={`
                   max-w-[70%] rounded-lg p-3
                   ${isOwnMessage 
                     ? isDarkMode 
-                      ? 'bg-teal-500 text-white' 
-                      : 'bg-lime-500 text-white'
+                      ? 'bg-teal-500 text-white rounded-tr-none' 
+                      : 'bg-lime-500 text-white rounded-tr-none'
                     : isDarkMode
-                      ? 'bg-gray-800 text-white'
-                      : 'bg-gray-100 text-black'
+                      ? 'bg-gray-800 text-white rounded-tl-none'
+                      : 'bg-gray-100 text-black rounded-tl-none'
                   }
                 `}
               >
@@ -98,14 +94,6 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
                   {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-
-              {isOwnMessage && (
-                <img
-                  src={authUser.profilePic || "/avatar.jpg"}
-                  alt={authUser.fullName}
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              )}
             </div>
           );
         })
