@@ -36,7 +36,7 @@ const HomePage = () => {
   // Initialize socket connection with unread message handling
   useEffect(() => {
     if (authUser?._id) {
-      socketRef.current = io("http://localhost:5001");
+      socketRef.current = io(import.meta.env.VITE_API_URL);
 
       socketRef.current.on("connect", () => {
         socketRef.current.emit("setup", authUser);
