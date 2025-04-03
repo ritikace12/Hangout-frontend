@@ -1,0 +1,1 @@
+export const messageSound = new Audio('/path/to/message.mp3'); 
