@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import toast from "react-hot-toast";
 import { useThemeStore } from "../store/useThemeStore";
-import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare, User } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, MessageSquare, User } from "lucide-react";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -23,10 +23,9 @@ const SignUpPage = () => {
 
     try {
       await signup(formData);
-      toast.success("Account created successfully!");
       navigate("/");
     } catch (error) {
-      toast.error(error.message || "Signup failed");
+      // Error toast is handled in the auth store
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +124,7 @@ const SignUpPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
               isDarkMode 
                 ? 'bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-700' 
                 : 'bg-lime-500 text-white hover:bg-lime-600 disabled:bg-gray-300'
@@ -133,7 +132,7 @@ const SignUpPage = () => {
           >
             {isLoading ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <LoadingSpinner size="sm" />
                 Creating account...
               </>
             ) : (

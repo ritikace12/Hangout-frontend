@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useThemeStore } from "../store/useThemeStore";
 import axiosInstance from "../lib/axios";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const HomePage = () => {
   const { authUser } = useAuthStore();
@@ -37,25 +38,46 @@ const HomePage = () => {
   // Initialize socket connection with unread message handling
   useEffect(() => {
     if (authUser?._id) {
+      console.log("Initializing socket connection to:", import.meta.env.VITE_API_URL);
       socketRef.current = io(import.meta.env.VITE_API_URL, {
         withCredentials: true,
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
+        path: '/socket.io/',
+        secure: true,
+        rejectUnauthorized: false
       });
 
       socketRef.current.on("connect", () => {
-        console.log("Socket connected");
+        console.log("Socket connected successfully");
         socketRef.current.emit("setup", authUser);
       });
 
       socketRef.current.on("connect_error", (error) => {
-        console.error("Socket connection error:", error);
+        console.error("Socket connection error:", {
+          message: error.message,
+          description: error.description,
+          type: error.type
+        });
         toast.error("Connection error. Please try again.");
       });
 
+      socketRef.current.on("error", (error) => {
+        console.error("Socket error:", error);
+      });
+
+      socketRef.current.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+        if (reason === "io server disconnect") {
+          // Server initiated disconnect, try to reconnect
+          socketRef.current.connect();
+        }
+      });
+
       socketRef.current.on("message-received", (newMessage) => {
+        console.log("Message received:", newMessage);
         // Update last message for the sender
         setLastMessages(prev => ({
           ...prev,
@@ -92,11 +114,13 @@ const HomePage = () => {
       });
 
       socketRef.current.on("online-users", (users) => {
+        console.log("Online users updated:", users);
         setOnlineUsers(users);
       });
 
       return () => {
         if (socketRef.current) {
+          console.log("Cleaning up socket connection");
           socketRef.current.disconnect();
         }
       };
@@ -139,28 +163,40 @@ const HomePage = () => {
 
   // Send message handler with real-time update
   const handleSendMessage = async (text, image) => {
-    if (!selectedUser || (!text.trim() && !image)) return;
+    if (!selectedUser || (!text?.trim() && !image)) {
+      console.log("Message validation failed:", { selectedUser, text, image });
+      return;
+    }
+
+    console.log("Starting to send message:", {
+      text,
+      image,
+      selectedUser: selectedUser._id,
+      currentUser: authUser._id
+    });
 
     // Optimistically add message to UI
     const tempMessage = {
       _id: Date.now().toString(),
-      text,
+      text: text || "",  // Ensure text is always a string
       image,
       senderId: authUser,
       receiverId: selectedUser._id,
       createdAt: new Date().toISOString(),
-      isTemp: true // Flag to identify temporary message
+      isTemp: true
     };
 
     setMessages(prev => [...prev, tempMessage]);
 
     setIsLoadingSend(true);
     try {
+      console.log("Making API request to:", `/messages/send/${selectedUser._id}`);
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, {
-        text,
+        text: text || "",  // Ensure text is always a string
         image
       });
 
+      console.log("API response:", res.data);
       const newMessage = res.data;
       
       // Replace temp message with actual message
@@ -169,16 +205,37 @@ const HomePage = () => {
       );
 
       // Emit socket event for real-time update
-      if (socketRef.current) {
+      if (socketRef.current?.connected) {
+        console.log("Socket is connected, emitting message");
         socketRef.current.emit("send-message", {
           ...newMessage,
           receiverId: selectedUser._id,
         });
+      } else {
+        console.warn("Socket not connected, attempting to reconnect");
+        socketRef.current?.connect();
+        // Wait a bit and try to emit again
+        setTimeout(() => {
+          if (socketRef.current?.connected) {
+            socketRef.current.emit("send-message", {
+              ...newMessage,
+              receiverId: selectedUser._id,
+            });
+          } else {
+            console.error("Failed to reconnect socket");
+            toast.error("Message sent but real-time updates may be delayed");
+          }
+        }, 1000);
       }
     } catch (error) {
       // Remove temp message if send failed
       setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-      console.error("Error sending message:", error);
+      console.error("Error sending message:", {
+        error,
+        response: error.response,
+        request: error.request,
+        message: error.message
+      });
       toast.error(error.response?.data?.message || "Failed to send message");
     } finally {
       setIsLoadingSend(false);
@@ -187,15 +244,15 @@ const HomePage = () => {
 
   if (isUserLoading) {
     return (
-      <div className="h-screen pt-20 flex items-center justify-center bg-white">
-        <div className="animate-spin text-gray-700">Loading users...</div>
+      <div className="h-full flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
     <div className="h-full">
-      <div className="h-full px-4 py-4">
+      <div className="h-full p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
           {/* Users Sidebar */}
           <div className={`${isDarkMode ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border rounded-lg overflow-hidden flex flex-col`}>
@@ -274,14 +331,16 @@ const HomePage = () => {
                     </div>
                   </div>
                 </div>
-                <Messages
-                  messages={messages}
-                  isLoadingMessages={isLoadingMessages}
-                />
-                <MessageInput
-                  onSendMessage={handleSendMessage}
-                  isLoadingSend={isLoadingSend}
-                />
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <Messages
+                    messages={messages}
+                    isLoadingMessages={isLoadingMessages}
+                  />
+                  <MessageInput
+                    onSendMessage={handleSendMessage}
+                    isLoadingSend={isLoadingSend}
+                  />
+                </div>
               </>
             ) : (
               <div className="h-full flex items-center justify-center">

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
-import { Loader } from "lucide-react";
+import LoadingSpinner from "./LoadingSpinner";
 
 const Messages = ({ messages = [], isLoadingMessages }) => {
   const { authUser } = useAuthStore();
@@ -32,7 +32,7 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
   if (isLoadingMessages) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader className="size-8 animate-spin" />
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
@@ -40,8 +40,8 @@ const Messages = ({ messages = [], isLoadingMessages }) => {
   if (!Array.isArray(messages)) {
     console.error("Messages is not an array:", messages);
     return (
-      <div className="flex-1 flex items-center justify-center bg-white">
-        <div className="text-gray-700">No messages to display</div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>No messages to display</div>
       </div>
     );
   }

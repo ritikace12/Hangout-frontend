@@ -12,11 +12,14 @@ const MessageInput = ({ onSendMessage, isLoadingSend }) => {
     e.preventDefault();
     if (!message.trim() && !image) return;
 
+    console.log("MessageInput: Attempting to send message", { message, image });
     try {
-      await onSendMessage({ text: message, image });
+      await onSendMessage(message, image);
+      console.log("MessageInput: Message sent successfully");
       setMessage("");
       setImage(null);
     } catch (error) {
+      console.error("MessageInput: Failed to send message", error);
       toast.error("Failed to send message");
     }
   };

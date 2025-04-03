@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import toast from "react-hot-toast";
 import { useThemeStore } from "../store/useThemeStore";
 import AuthImagePattern from "../components/AuthImagePattern";
 import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,10 +23,9 @@ const LoginPage = () => {
 
     try {
       await login(formData);
-      toast.success("Login successful!");
       navigate("/");
     } catch (error) {
-      toast.error(error.message || "Login failed");
+      // Error toast is handled in the auth store
     } finally {
       setIsLoading(false);
     }
@@ -78,13 +77,20 @@ const LoginPage = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+            className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
               isDarkMode 
                 ? 'bg-teal-500 text-white hover:bg-teal-600 disabled:bg-gray-700' 
                 : 'bg-lime-500 text-white hover:bg-lime-600 disabled:bg-gray-300'
             }`}
           >
-            {isLoading ? "Logging in..." : "Login"}
+            {isLoading ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Logging in...
+              </>
+            ) : (
+              "Login"
+            )}
           </button>
         </form>
         <p className={`mt-4 text-center text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>

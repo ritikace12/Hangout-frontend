@@ -14,10 +14,10 @@ const App = () => {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <div className={`min-h-screen flex flex-col ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
+    <div className={`h-screen flex flex-col overflow-hidden ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
       <Toaster position="top-center" />
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 overflow-hidden pt-16">
         <Routes>
           <Route
             path="/"
