@@ -56,11 +56,7 @@ const HomePage = () => {
       });
 
       socketRef.current.on("connect_error", (error) => {
-        console.error("Socket connection error:", {
-          message: error.message,
-          description: error.description,
-          type: error.type
-        });
+        console.error("Socket connection error:", error);
         toast.error("Connection error. Please try again.");
       });
 
@@ -115,11 +111,17 @@ const HomePage = () => {
         }
       });
 
-      // Add new event listener for message sent
       socketRef.current.on("message-sent", (newMessage) => {
         console.log("Message sent:", newMessage);
         if (selectedUser?._id === newMessage.receiverId) {
           setMessages(prev => [...prev, newMessage]);
+        }
+      });
+
+      socketRef.current.on("message-status", (status) => {
+        console.log("Message status:", status);
+        if (status.status === "offline") {
+          toast.error("User is offline. Message will be delivered when they come online.");
         }
       });
 
@@ -178,13 +180,6 @@ const HomePage = () => {
       return;
     }
 
-    console.log("Starting to send message:", {
-      text,
-      image,
-      selectedUser: selectedUser._id,
-      currentUser: authUser._id
-    });
-
     // Optimistically add message to UI
     const tempMessage = {
       _id: Date.now().toString(),
@@ -200,13 +195,11 @@ const HomePage = () => {
 
     setIsLoadingSend(true);
     try {
-      console.log("Making API request to:", `/messages/send/${selectedUser._id}`);
       const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, {
         text: text || "",
         image
       });
 
-      console.log("API response:", res.data);
       const newMessage = res.data;
       
       // Replace temp message with actual message
@@ -216,7 +209,6 @@ const HomePage = () => {
 
       // Emit socket event for real-time update
       if (socketRef.current?.connected) {
-        console.log("Socket is connected, emitting message");
         socketRef.current.emit("send-message", {
           ...newMessage,
           receiverId: selectedUser._id,
@@ -240,12 +232,7 @@ const HomePage = () => {
     } catch (error) {
       // Remove temp message if send failed
       setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-      console.error("Error sending message:", {
-        error,
-        response: error.response,
-        request: error.request,
-        message: error.message
-      });
+      console.error("Error sending message:", error);
       toast.error(error.response?.data?.message || "Failed to send message");
     } finally {
       setIsLoadingSend(false);
