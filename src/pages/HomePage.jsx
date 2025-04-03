@@ -111,12 +111,9 @@ const HomePage = () => {
       }));
 
       if (status === "queued") {
-        toast({
-          title: "Message Queued",
-          description: "Message will be delivered when the user comes online",
-          status: "info",
+        toast("Message will be delivered when the user comes online", {
+          icon: 'ℹ️',
           duration: 3000,
-          isClosable: true,
         });
       }
     });
