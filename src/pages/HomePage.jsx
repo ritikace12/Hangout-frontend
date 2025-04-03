@@ -7,6 +7,7 @@ import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { useThemeStore } from "../store/useThemeStore";
+import axiosInstance from "../lib/axios";
 
 const HomePage = () => {
   const { authUser } = useAuthStore();
@@ -36,10 +37,22 @@ const HomePage = () => {
   // Initialize socket connection with unread message handling
   useEffect(() => {
     if (authUser?._id) {
-      socketRef.current = io(import.meta.env.VITE_API_URL);
+      socketRef.current = io(import.meta.env.VITE_API_URL, {
+        withCredentials: true,
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      });
 
       socketRef.current.on("connect", () => {
+        console.log("Socket connected");
         socketRef.current.emit("setup", authUser);
+      });
+
+      socketRef.current.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+        toast.error("Connection error. Please try again.");
       });
 
       socketRef.current.on("message-received", (newMessage) => {
@@ -61,7 +74,7 @@ const HomePage = () => {
           // Show notification
           toast.custom((t) => (
             <div 
-              className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer"
+              className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} p-4 rounded-lg shadow-lg flex items-center gap-3 cursor-pointer`}
               onClick={() => handleUserSelect(newMessage.senderId)}
             >
               <img 
@@ -70,8 +83,8 @@ const HomePage = () => {
                 className="w-10 h-10 rounded-full"
               />
               <div>
-                <p className="font-medium">{newMessage.senderId.fullName}</p>
-                <p className="text-sm text-gray-500">{newMessage.text}</p>
+                <p className={`font-medium ${isDarkMode ? 'text-white' : 'text-black'}`}>{newMessage.senderId.fullName}</p>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{newMessage.text}</p>
               </div>
             </div>
           ));
@@ -94,11 +107,8 @@ const HomePage = () => {
   useEffect(() => {
     const loadLastMessages = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/last-messages`, {
-          credentials: "include"
-        });
-        const data = await res.json();
-        setLastMessages(data);
+        const res = await axiosInstance.get("/messages/last-messages");
+        setLastMessages(res.data);
       } catch (error) {
         console.error("Error loading last messages:", error);
       }
@@ -117,14 +127,11 @@ const HomePage = () => {
 
     setIsLoadingMessages(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/messages/${user._id}`,
-        { credentials: "include" }
-      );
-      const data = await res.json();
-      setMessages(Array.isArray(data) ? data : []);
+      const res = await axiosInstance.get(`/messages/${user._id}`);
+      setMessages(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      toast.error("Failed to load messages");
+      console.error("Error loading messages:", error);
+      toast.error(error.response?.data?.message || "Failed to load messages");
     } finally {
       setIsLoadingMessages(false);
     }
@@ -149,17 +156,12 @@ const HomePage = () => {
 
     setIsLoadingSend(true);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/messages/send/${selectedUser._id}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ text, image }),
-        }
-      );
+      const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, {
+        text,
+        image
+      });
 
-      const newMessage = await res.json();
+      const newMessage = res.data;
       
       // Replace temp message with actual message
       setMessages(prev => 
@@ -176,7 +178,8 @@ const HomePage = () => {
     } catch (error) {
       // Remove temp message if send failed
       setMessages(prev => prev.filter(msg => msg._id !== tempMessage._id));
-      toast.error("Failed to send message");
+      console.error("Error sending message:", error);
+      toast.error(error.response?.data?.message || "Failed to send message");
     } finally {
       setIsLoadingSend(false);
     }
