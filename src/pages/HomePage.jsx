@@ -63,7 +63,7 @@ const HomePage = () => {
     }
   }, [scrollToBottom]);
 
-  // Improved socket reconnection logic
+  // Improved socket initialization
   const initializeSocket = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect();
@@ -72,33 +72,54 @@ const HomePage = () => {
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       auth: {
         token: localStorage.getItem("token")
+      },
+      query: {
+        userId: authUser._id,
+        connectionId: Date.now().toString()
       }
     });
 
+    // Connection events
     socketRef.current.on("connect", () => {
       console.log("Socket connected");
-      socketRef.current.emit("setup", authUser);
+      socketRef.current.emit("setup", {
+        userId: authUser._id,
+        connectionId: socketRef.current.id
+      });
     });
 
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+      toast.error("Connection error. Attempting to reconnect...");
+    });
+
+    socketRef.current.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+      if (reason === "io server disconnect") {
+        socketRef.current.connect();
+      }
+    });
+
+    // Message events
     socketRef.current.on("message-received", (newMessage) => {
       if (selectedUser && newMessage.senderId === selectedUser._id) {
         setMessages(prev => {
-          // Check if message already exists
           const exists = prev.some(msg => msg._id === newMessage._id);
           if (exists) return prev;
           return [...prev, newMessage];
         });
+        scrollToBottom();
       }
     });
 
     socketRef.current.on("message-sent", (newMessage) => {
       if (selectedUser && newMessage.receiverId === selectedUser._id) {
         setMessages(prev => {
-          // Check if message already exists
           const exists = prev.some(msg => msg._id === newMessage._id);
           if (exists) return prev;
           return [...prev, newMessage];
         });
+        scrollToBottom();
       }
     });
 
@@ -118,18 +139,7 @@ const HomePage = () => {
       }
     });
 
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      toast.error("Connection error. Attempting to reconnect...");
-    });
-
-    socketRef.current.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      if (reason === "io server disconnect") {
-        socketRef.current.connect();
-      }
-    });
-
+    // User status events
     socketRef.current.on("online-users", (users) => {
       setOnlineUsers(users);
     });
@@ -139,7 +149,14 @@ const HomePage = () => {
         setIsUserTyping(isTyping);
       }
     });
-  }, [authUser]);
+
+    // Error handling
+    socketRef.current.on("error", (error) => {
+      console.error("Socket error:", error);
+      toast.error("An error occurred. Please refresh the page.");
+    });
+
+  }, [authUser, selectedUser]);
 
   useEffect(() => {
     if (authUser) {
@@ -167,13 +184,12 @@ const HomePage = () => {
     }
   }, [authUser]);
 
+  // Improved message sending
   const handleSendMessage = async (tempMessage, formData, tempMessageId) => {
     try {
       // Update messages state with temporary message
       setMessages(prev => [...prev, tempMessage]);
-      
-      // Scroll to bottom after adding temporary message
-      setTimeout(scrollToBottom, 100);
+      scrollToBottom();
 
       // Send the actual message to the server
       const response = await axiosInstance.post(`/messages/send/${selectedUser._id}`, formData, {
@@ -190,14 +206,16 @@ const HomePage = () => {
       ));
       
       // Emit message through socket
-      socketRef.current.emit("send-message", newMessage);
+      if (socketRef.current?.connected) {
+        socketRef.current.emit("send-message", newMessage);
+      } else {
+        toast.error("Connection lost. Message will be sent when reconnected.");
+      }
       
-      // Scroll to bottom after sending
-      setTimeout(scrollToBottom, 100);
+      scrollToBottom();
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
-      // Update the failed message status
       setMessages(prev => prev.map(msg => 
         msg._id === tempMessageId ? { ...msg, status: "failed" } : msg
       ));
