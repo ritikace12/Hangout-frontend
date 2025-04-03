@@ -1,18 +1,16 @@
 import { useState, useRef, memo } from "react";
 import { useThemeStore } from "../store/useThemeStore";
 import { useAuthStore } from "../store/useAuthStore";
-import { useChatStore } from "../store/useChatStore";
 import { toast } from "react-hot-toast";
 import { FiSend, FiImage } from "react-icons/fi";
 
-const MessageInput = memo(({ selectedUser, onSendMessage }) => {
+const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
   const [message, setMessage] = useState("");
   const [image, setImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
   const { isDarkMode } = useThemeStore();
   const { authUser } = useAuthStore();
-  const { socket } = useChatStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -48,7 +46,9 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
       setImage(null);
 
       // Emit typing status
-      socket.emit("typing", { receiverId: selectedUser._id, isTyping: false });
+      if (socket?.connected) {
+        socket.emit("typing", { receiverId: selectedUser._id, isTyping: false });
+      }
 
       // Send message to server
       const response = await fetch("/api/messages", {
@@ -70,10 +70,12 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
       });
 
       // Emit socket event
-      socket.emit("send-message", {
-        receiverId: selectedUser._id,
-        message: data,
-      });
+      if (socket?.connected) {
+        socket.emit("send-message", {
+          receiverId: selectedUser._id,
+          message: data,
+        });
+      }
 
     } catch (error) {
       console.error("Error sending message:", error);

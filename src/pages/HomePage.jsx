@@ -343,6 +343,7 @@ const HomePage = () => {
                     selectedUser={selectedUser}
                     onSendMessage={handleSendMessage}
                     isLoadingSend={isLoadingSend}
+                    socket={socketRef.current}
                   />
                 </div>
               </>
