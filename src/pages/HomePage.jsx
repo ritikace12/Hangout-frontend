@@ -340,6 +340,7 @@ const HomePage = () => {
                     isLoadingMessages={isLoadingMessages}
                   />
                   <MessageInput
+                    selectedUser={selectedUser}
                     onSendMessage={handleSendMessage}
                     isLoadingSend={isLoadingSend}
                   />

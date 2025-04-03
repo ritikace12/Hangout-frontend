@@ -18,6 +18,7 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
     e.preventDefault();
     if (!message.trim() && !image) return;
 
+    let tempMessageId = null;
     try {
       setIsUploading(true);
       const formData = new FormData();
@@ -38,6 +39,8 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
         createdAt: new Date().toISOString(),
         status: "sending",
       };
+
+      tempMessageId = tempMessage._id;
 
       // Call onSendMessage with the temporary message
       onSendMessage(tempMessage);
@@ -76,7 +79,9 @@ const MessageInput = memo(({ selectedUser, onSendMessage }) => {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
       // Remove the temporary message on error
-      onSendMessage(null, tempMessage._id);
+      if (tempMessageId) {
+        onSendMessage(null, tempMessageId);
+      }
     } finally {
       setIsUploading(false);
     }
