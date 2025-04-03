@@ -94,7 +94,7 @@ const HomePage = () => {
   useEffect(() => {
     const loadLastMessages = async () => {
       try {
-        const res = await fetch("http://localhost:5001/api/messages/last-messages", {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/messages/last-messages`, {
           credentials: "include"
         });
         const data = await res.json();
@@ -118,7 +118,7 @@ const HomePage = () => {
     setIsLoadingMessages(true);
     try {
       const res = await fetch(
-        `http://localhost:5001/api/messages/${user._id}`,
+        `${import.meta.env.VITE_API_URL}/api/messages/${user._id}`,
         { credentials: "include" }
       );
       const data = await res.json();
@@ -150,7 +150,7 @@ const HomePage = () => {
     setIsLoadingSend(true);
     try {
       const res = await fetch(
-        `http://localhost:5001/api/messages/send/${selectedUser._id}`,
+        `${import.meta.env.VITE_API_URL}/api/messages/send/${selectedUser._id}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
