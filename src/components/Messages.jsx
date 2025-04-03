@@ -6,13 +6,27 @@ import LoadingSpinner from "./LoadingSpinner";
 import { FiCheck, FiCheckCircle } from "react-icons/fi";
 
 const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
+  // Validate message object
+  if (!message || typeof message !== 'object') {
+    return null;
+  }
+
+  // Ensure required properties exist
+  const safeMessage = {
+    text: message.text || '',
+    image: message.image || null,
+    senderId: message.senderId || { _id: '', fullName: '', profilePic: '' },
+    status: message.status || 'unknown',
+    createdAt: message.createdAt || new Date().toISOString()
+  };
+
   return (
     <div
       className={`flex items-end gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
     >
       <img
-        src={isOwnMessage ? authUser.profilePic : message.senderId.profilePic || "/avatar.jpg"}
-        alt={isOwnMessage ? authUser.fullName : message.senderId.fullName}
+        src={isOwnMessage ? authUser.profilePic : safeMessage.senderId.profilePic || "/avatar.jpg"}
+        alt={isOwnMessage ? authUser.fullName : safeMessage.senderId.fullName}
         className="w-8 h-8 rounded-full object-cover"
       />
 
@@ -29,12 +43,12 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
           }
         `}
       >
-        {message.text && (
-          <p className="text-sm">{message.text}</p>
+        {safeMessage.text && (
+          <p className="text-sm">{safeMessage.text}</p>
         )}
-        {message.image && (
+        {safeMessage.image && (
           <img
-            src={message.image}
+            src={safeMessage.image}
             alt="Shared"
             className="max-w-full rounded-lg mt-2"
             loading="lazy"
@@ -42,7 +56,7 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
         )}
         <div className="flex items-center justify-between mt-1">
           <p className={`text-xs ${
-            message.senderId._id === authUser._id
+            safeMessage.senderId._id === authUser._id
               ? isDarkMode
                 ? 'text-blue-200'
                 : 'text-blue-100'
@@ -50,29 +64,29 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
               ? 'text-gray-400'
               : 'text-gray-500'
           }`}>
-            {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+            {formatDistanceToNow(new Date(safeMessage.createdAt), { addSuffix: true })}
           </p>
-          {message.senderId._id === authUser._id && (
+          {safeMessage.senderId._id === authUser._id && (
             <div className="flex items-center ml-2">
-              {message.status === "sending" && (
+              {safeMessage.status === "sending" && (
                 <span className="text-xs">Sending...</span>
               )}
-              {message.status === "sent" && (
+              {safeMessage.status === "sent" && (
                 <FiCheck className="w-3 h-3" />
               )}
-              {message.status === "delivered" && (
+              {safeMessage.status === "delivered" && (
                 <FiCheck className="w-3 h-3" />
               )}
-              {message.status === "read" && (
+              {safeMessage.status === "read" && (
                 <FiCheckCircle className="w-3 h-3 text-blue-300" />
               )}
-              {message.status === "failed" && (
+              {safeMessage.status === "failed" && (
                 <span className="text-xs text-red-500">Failed</span>
               )}
-              {message.status === "queued" && (
+              {safeMessage.status === "queued" && (
                 <span className="text-xs text-gray-400">Queued</span>
               )}
-              {message.status === "offline" && (
+              {safeMessage.status === "offline" && (
                 <span className="text-xs text-gray-400">Will deliver when online</span>
               )}
             </div>

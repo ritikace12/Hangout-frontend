@@ -39,17 +39,31 @@ const MessageInput = memo(({ selectedUser, onSendMessage, socket }) => {
       };
 
       tempMessageId = tempMessage._id;
+      
+      // Validate socket connection before sending
+      if (socket && !socket.connected) {
+        toast.error("Connection lost. Please refresh the page.");
+        return;
+      }
+
       onSendMessage(tempMessage, formData, tempMessageId);
       setMessage("");
       setImage(null);
 
       if (socket?.connected) {
-        socket.emit("typing", { receiverId: selectedUser._id, isTyping: false });
+        try {
+          socket.emit("typing", { receiverId: selectedUser._id, isTyping: false });
+        } catch (socketError) {
+          console.error("Socket error:", socketError);
+          // Don't show error toast for socket typing event as it's not critical
+        }
       }
     } catch (error) {
       console.error("Error preparing message:", error);
       toast.error("Failed to prepare message");
-      onSendMessage({ ...tempMessage, status: "failed" }, null, tempMessageId);
+      if (tempMessageId) {
+        onSendMessage({ ...tempMessage, status: "failed" }, null, tempMessageId);
+      }
     } finally {
       setIsUploading(false);
     }
