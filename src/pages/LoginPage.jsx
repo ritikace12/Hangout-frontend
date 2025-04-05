@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import AuthImagePattern from "../components/AuthImagePattern";
@@ -14,8 +14,12 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, isLoggingIn, clearAuth } = useAuthStore();
   const { isDarkMode } = useThemeStore();
+
+  // Get the redirect path from location state or default to home
+  const from = location.state?.from?.pathname || "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +27,8 @@ const LoginPage = () => {
 
     try {
       await login(formData);
-      navigate("/");
+      // Redirect to the page user was trying to access or home
+      navigate(from, { replace: true });
     } catch (error) {
       // Error toast is handled in the auth store
     } finally {

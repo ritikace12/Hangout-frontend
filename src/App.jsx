@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
@@ -14,6 +14,12 @@ import ServerStatus from "./components/ServerStatus";
 const App = () => {
   const { authUser } = useAuthStore();
   const { isDarkMode } = useThemeStore();
+  const location = useLocation();
+
+  // If not authenticated and not already on login or signup page, redirect to login
+  if (!authUser && location.pathname !== '/login' && location.pathname !== '/signup') {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <ServerStatus>
