@@ -1,6 +1,6 @@
 import { useEffect, useRef, memo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { useAuthStore } from "../store/useAuthStore";
+import useAuthStore from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import LoadingSpinner from "./LoadingSpinner";
 import { FiCheck, FiCheckCircle } from "react-icons/fi";
