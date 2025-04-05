@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
-import AuthImagePattern from "../components/AuthImagePattern";
-import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const LoginPage = () => {
@@ -14,28 +13,29 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, authUser } = useAuthStore();
+  const { login, authUser, checkAuth } = useAuthStore();
   const { isDarkMode } = useThemeStore();
 
-  // Get the redirect path from location state or default to home
-  const from = location.state?.from?.pathname || "/";
-
-  // If already authenticated, redirect to home
+  // Check auth status on mount
   useEffect(() => {
-    if (authUser) {
-      navigate("/", { replace: true });
-    }
-  }, [authUser, navigate]);
+    const checkAuthStatus = async () => {
+      const isAuthenticated = await checkAuth();
+      if (isAuthenticated) {
+        navigate("/", { replace: true });
+      }
+    };
+    checkAuthStatus();
+  }, [checkAuth, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await login(formData);
-      // Redirect to home after successful login
-      navigate("/", { replace: true });
+      const success = await login(formData);
+      if (success) {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       // Error toast is handled in the auth store
     } finally {

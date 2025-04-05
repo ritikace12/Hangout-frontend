@@ -15,7 +15,6 @@ export const useAuthStore = create(
 
       clearAuth: () => {
         set({ authUser: null });
-        // Clear persisted state
         localStorage.removeItem('auth-storage');
       },
 
@@ -24,14 +23,13 @@ export const useAuthStore = create(
           const res = await axiosInstance.get("/auth/check");
           if (res.data) {
             set({ authUser: res.data });
-          } else {
-            set({ authUser: null });
+            return true;
           }
+          set({ authUser: null });
+          return false;
         } catch (error) {
-          // Only clear auth if it's a 401 error (unauthorized)
-          if (error.response?.status === 401) {
-            set({ authUser: null });
-          }
+          set({ authUser: null });
+          return false;
         } finally {
           set({ isCheckingAuth: false });
         }
@@ -44,10 +42,13 @@ export const useAuthStore = create(
           if (res.data) {
             set({ authUser: res.data });
             toast.success("Account created successfully");
+            return true;
           }
+          return false;
         } catch (error) {
           console.error("Signup error:", error);
           toast.error(error.response?.data?.message || "Signup failed");
+          return false;
         } finally {
           set({ isSigningUp: false });
         }
@@ -60,10 +61,13 @@ export const useAuthStore = create(
           if (res.data) {
             set({ authUser: res.data });
             toast.success("Logged in successfully");
+            return true;
           }
+          return false;
         } catch (error) {
           console.error("Login error:", error);
           toast.error(error.response?.data?.message || "Login failed");
+          return false;
         } finally {
           set({ isLoggingIn: false });
         }
@@ -76,7 +80,6 @@ export const useAuthStore = create(
           console.error("Logout error:", error);
         } finally {
           set({ authUser: null });
-          // Clear persisted state
           localStorage.removeItem('auth-storage');
         }
       },
@@ -88,10 +91,13 @@ export const useAuthStore = create(
           if (res.data) {
             set({ authUser: res.data });
             toast.success("Profile updated successfully");
+            return true;
           }
+          return false;
         } catch (error) {
           console.error("Update profile error:", error);
           toast.error(error.response?.data?.message || "Failed to update profile");
+          return false;
         } finally {
           set({ isUpdatingProfile: false });
         }
@@ -99,7 +105,6 @@ export const useAuthStore = create(
     }),
     {
       name: "auth-storage",
-      // Only persist the authUser
       partialize: (state) => ({ authUser: state.authUser }),
     }
   )

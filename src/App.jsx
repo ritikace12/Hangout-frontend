@@ -10,17 +10,34 @@ import SignUpPage from "./pages/SignUpPage";
 import ProfilePage from "./pages/ProfilePage";
 import PrivateRoute from "./components/PrivateRoute";
 import ServerStatus from "./components/ServerStatus";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const App = () => {
-  const { authUser, clearAuth } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
   const { isDarkMode } = useThemeStore();
   const location = useLocation();
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Clear auth state on app initialization
+  // Check auth status on mount
   useEffect(() => {
-    clearAuth();
-  }, []);
+    const initialize = async () => {
+      await checkAuth();
+      setIsInitialized(true);
+    };
+    initialize();
+  }, [checkAuth]);
+
+  // Show loading state while checking auth
+  if (!isInitialized || isCheckingAuth) {
+    return (
+      <div className={`h-screen flex items-center justify-center ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Loading...</h2>
+          <p className="text-gray-500">Please wait while we check your authentication status</p>
+        </div>
+      </div>
+    );
+  }
 
   // If not authenticated and not already on login or signup page, redirect to login
   if (!authUser && location.pathname !== '/login' && location.pathname !== '/signup') {
