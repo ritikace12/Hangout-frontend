@@ -83,20 +83,11 @@ const HomePage = () => {
   // Improved socket initialization
   const initializeSocket = useCallback(() => {
     if (socketRef.current) {
-      console.log("Disconnecting existing socket");
       socketRef.current.disconnect();
     }
 
     // Get token from localStorage
     const token = localStorage.getItem("token");
-    
-    if (!token || !authUser?._id) {
-      console.error("No token or user ID found, redirecting to login");
-      navigate("/login");
-      return;
-    }
-    
-    console.log("Initializing socket with user ID:", authUser._id);
     
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
@@ -109,7 +100,7 @@ const HomePage = () => {
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000
@@ -117,10 +108,7 @@ const HomePage = () => {
 
     // Connection events
     socketRef.current.on("connect", () => {
-      console.log("Socket connected with ID:", socketRef.current.id);
-      console.log("Current user ID:", authUser._id);
-      
-      // Emit setup event with user data
+      console.log("Socket connected");
       socketRef.current.emit("setup", {
         _id: authUser._id,
         connectionId: socketRef.current.id
@@ -130,35 +118,22 @@ const HomePage = () => {
     socketRef.current.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
       if (error.message.includes("unauthorized")) {
-        console.error("Socket unauthorized, redirecting to login");
         navigate("/login");
       } else {
         toast.error("Connection error. Attempting to reconnect...");
-        // Attempt to reconnect after a delay
-        setTimeout(() => {
-          if (socketRef.current) {
-            console.log("Attempting to reconnect socket...");
-            socketRef.current.connect();
-          }
-        }, 5000);
       }
     });
 
     socketRef.current.on("disconnect", (reason) => {
       console.log("Socket disconnected:", reason);
       if (reason === "io server disconnect") {
-        console.log("Server disconnected, attempting to reconnect...");
         socketRef.current.connect();
       }
     });
 
     // Message events
     socketRef.current.on("message-received", (newMessage) => {
-      console.log("Message received event:", {
-        newMessage,
-        selectedUser,
-        currentMessages: messages
-      });
+      console.log("Message received:", newMessage);
       if (selectedUser && newMessage.senderId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -170,11 +145,7 @@ const HomePage = () => {
     });
 
     socketRef.current.on("message-sent", (newMessage) => {
-      console.log("Message sent event:", {
-        newMessage,
-        selectedUser,
-        currentMessages: messages
-      });
+      console.log("Message sent:", newMessage);
       if (selectedUser && newMessage.receiverId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -225,69 +196,19 @@ const HomePage = () => {
       }
     });
 
-  }, [authUser, selectedUser, navigate, messages]);
+  }, [authUser, selectedUser, navigate]);
 
   // Initialize socket only after authentication is verified
   useEffect(() => {
-    const initializeSocketWithAuth = async () => {
-      try {
-        // Verify auth first
-        const isAuthenticated = await checkAuth();
-        if (!isAuthenticated || !authUser?._id) {
-          console.log("Not authenticated or no user ID, redirecting to login");
-          navigate("/login");
-          return;
-        }
-
-        // Initialize socket only if we have a valid user
-        if (authUser._id) {
-          initializeSocket();
-        }
-      } catch (error) {
-        console.error("Error initializing socket:", error);
-        navigate("/login");
-      }
-    };
-
-    initializeSocketWithAuth();
-
+    if (authUser) {
+      initializeSocket();
+    }
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, [authUser, initializeSocket, checkAuth, navigate]);
-
-  // Check socket connection periodically
-  useEffect(() => {
-    const checkSocketConnection = setInterval(() => {
-      if (socketRef.current && !socketRef.current.connected) {
-        console.log("Socket disconnected, attempting to reconnect...");
-        socketRef.current.connect();
-      }
-    }, 5000);
-
-    return () => clearInterval(checkSocketConnection);
-  }, []);
-
-  // Check authentication status periodically
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const response = await axiosInstance.get("/api/auth/check");
-        console.log("Auth check successful:", response.data);
-      } catch (error) {
-        console.error("Auth check failed:", error);
-        if (error.response?.status === 401) {
-          console.error("Authentication failed, redirecting to login");
-          navigate("/login");
-        }
-      }
-    };
-
-    const authCheckInterval = setInterval(checkAuthStatus, 60000); // Check every minute
-    return () => clearInterval(authCheckInterval);
-  }, [navigate]);
+  }, [authUser, initializeSocket]);
 
   useEffect(() => {
     const loadLastMessages = async () => {

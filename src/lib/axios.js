@@ -1,26 +1,25 @@
 import axios from "axios";
+import { useAuthStore } from "../store/useAuthStore";
 
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: `${import.meta.env.VITE_API_URL}/api`,
     withCredentials: true,
     headers: {
         'Content-Type': 'application/json'
     }
 });
 
-// Request interceptor to add token to all requests
+// Add a request interceptor to ensure cookies are sent
 axiosInstance.interceptors.request.use(
     (config) => {
-        // Get token from localStorage
-        const token = localStorage.getItem("token");
+        // Ensure credentials are included
+        config.withCredentials = true;
         
-        // Add token to Authorization header if it exists
+        // Get token from localStorage if available
+        const token = localStorage.getItem("token");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        
-        // Ensure withCredentials is set to true for all requests
-        config.withCredentials = true;
         
         return config;
     },
@@ -29,23 +28,18 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-// Response interceptor to handle 401 errors
+// Add a response interceptor
 axiosInstance.interceptors.response.use(
-    (response) => {
-        return response;
-    },
+    (response) => response,
     async (error) => {
-        const originalRequest = error.config;
-        
-        // Handle 401 Unauthorized errors
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
+        // Handle 401 errors
+        if (error.response && error.response.status === 401) {
+            // Clear auth state on 401
+            const authStore = useAuthStore.getState();
+            authStore.clearAuth();
             
-            // Clear token from localStorage
-            localStorage.removeItem("token");
-            
-            // Redirect to login page
-            window.location.href = "/login";
+            // Don't redirect here - let components handle it
+            console.log("Authentication failed, cleared auth state");
         }
         
         return Promise.reject(error);

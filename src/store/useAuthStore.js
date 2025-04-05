@@ -1,128 +1,122 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import axiosInstance from "../lib/axios";
 import toast from "react-hot-toast";
 
-const useAuthStore = create((set) => ({
-  authUser: null,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create(
+  persist(
+    (set) => ({
+      authUser: null,
+      isSigningUp: false,
+      isLoggingIn: false,
+      isUpdatingProfile: false,
+      onlineUsers: [],
 
-  setAuthUser: (user) => set({ authUser: user }),
-  setLoading: (loading) => set({ isLoading: loading }),
-  setError: (error) => set({ error }),
-
-  checkAuth: async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.log("No token found in localStorage");
+      clearAuth: () => {
         set({ authUser: null });
-        return false;
-      }
-
-      const response = await axiosInstance.get("/api/auth/check");
-      console.log("Auth check response:", response.data);
-      set({ authUser: response.data.user });
-      return true;
-    } catch (error) {
-      console.error("Auth check error:", error);
-      if (error.response?.status === 401) {
-        // Clear auth state on 401
-        set({ authUser: null });
+        // Clear token from localStorage
         localStorage.removeItem("token");
-      }
-      return false;
-    }
-  },
+      },
 
-  signup: async (formData) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await axiosInstance.post("/api/auth/signup", formData);
-      console.log("Signup response:", response.data);
-      
-      // Store token in localStorage
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
-      
-      set({ authUser: response.data.user, isLoading: false });
-      toast.success("Account created successfully!");
-      return response.data;
-    } catch (error) {
-      console.error("Signup error:", error);
-      set({ 
-        error: error.response?.data?.message || "Failed to sign up", 
-        isLoading: false 
-      });
-      toast.error(error.response?.data?.message || "Failed to sign up");
-      throw error;
-    }
-  },
+      checkAuth: async () => {
+        try {
+          const res = await axiosInstance.get("/auth/check");
+          if (res.data) {
+            set({ authUser: res.data });
+            return true;
+          }
+          return false;
+        } catch (error) {
+          // If we get a 401, it means we're not authenticated
+          if (error.response?.status === 401) {
+            set({ authUser: null });
+            localStorage.removeItem("token");
+          }
+          return false;
+        }
+      },
 
-  login: async (formData) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await axiosInstance.post("/api/auth/login", formData);
-      console.log("Login response:", response.data);
-      
-      // Store token in localStorage
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
-      }
-      
-      set({ authUser: response.data.user, isLoading: false });
-      toast.success("Logged in successfully!");
-      return response.data;
-    } catch (error) {
-      console.error("Login error:", error);
-      set({ 
-        error: error.response?.data?.message || "Failed to log in", 
-        isLoading: false 
-      });
-      toast.error(error.response?.data?.message || "Failed to log in");
-      throw error;
-    }
-  },
+      signup: async (data) => {
+        set({ isSigningUp: true });
+        try {
+          const res = await axiosInstance.post("/auth/signup", data);
+          if (res.data) {
+            set({ authUser: res.data });
+            // Store token if provided
+            if (res.data.token) {
+              localStorage.setItem("token", res.data.token);
+            }
+            toast.success("Account created successfully");
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Signup error:", error);
+          toast.error(error.response?.data?.message || "Signup failed");
+          return false;
+        } finally {
+          set({ isSigningUp: false });
+        }
+      },
 
-  logout: async () => {
-    try {
-      set({ isLoading: true });
-      await axiosInstance.post("/api/auth/logout");
-      set({ authUser: null, isLoading: false });
-      
-      // Clear token from localStorage
-      localStorage.removeItem("token");
-      
-      toast.success("Logged out successfully!");
-    } catch (error) {
-      console.error("Logout error:", error);
-      set({ 
-        error: error.response?.data?.message || "Failed to log out", 
-        isLoading: false 
-      });
-      toast.error(error.response?.data?.message || "Failed to log out");
-    }
-  },
+      login: async (data) => {
+        set({ isLoggingIn: true });
+        try {
+          const res = await axiosInstance.post("/auth/login", data);
+          if (res.data) {
+            set({ authUser: res.data });
+            // Store token if provided
+            if (res.data.token) {
+              localStorage.setItem("token", res.data.token);
+            }
+            toast.success("Logged in successfully");
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Login error:", error);
+          toast.error(error.response?.data?.message || "Login failed");
+          return false;
+        } finally {
+          set({ isLoggingIn: false });
+        }
+      },
 
-  updateProfile: async (formData) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await axiosInstance.put("/api/auth/update-profile", formData);
-      set({ authUser: response.data.user, isLoading: false });
-      toast.success("Profile updated successfully!");
-      return response.data;
-    } catch (error) {
-      console.error("Update profile error:", error);
-      set({ 
-        error: error.response?.data?.message || "Failed to update profile", 
-        isLoading: false 
-      });
-      toast.error(error.response?.data?.message || "Failed to update profile");
-      throw error;
-    }
-  },
-}));
+      logout: async () => {
+        try {
+          await axiosInstance.post("/auth/logout");
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          set({ authUser: null });
+          // Clear token from localStorage
+          localStorage.removeItem("token");
+        }
+      },
 
-export default useAuthStore;
+      updateProfile: async (data) => {
+        set({ isUpdatingProfile: true });
+        try {
+          const res = await axiosInstance.put("/auth/update", data);
+          if (res.data) {
+            set({ authUser: res.data });
+            toast.success("Profile updated successfully");
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error("Update profile error:", error);
+          toast.error(error.response?.data?.message || "Failed to update profile");
+          return false;
+        } finally {
+          set({ isUpdatingProfile: false });
+        }
+      },
+    }),
+    {
+      name: "auth-storage",
+      partialize: (state) => ({ authUser: state.authUser }),
+    }
+  )
+);
 
