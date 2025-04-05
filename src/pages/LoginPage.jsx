@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
@@ -15,11 +15,18 @@ const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoggingIn, clearAuth } = useAuthStore();
+  const { login, authUser } = useAuthStore();
   const { isDarkMode } = useThemeStore();
 
   // Get the redirect path from location state or default to home
   const from = location.state?.from?.pathname || "/";
+
+  // If already authenticated, redirect to home
+  useEffect(() => {
+    if (authUser) {
+      navigate("/", { replace: true });
+    }
+  }, [authUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,8 +34,8 @@ const LoginPage = () => {
 
     try {
       await login(formData);
-      // Redirect to the page user was trying to access or home
-      navigate(from, { replace: true });
+      // Redirect to home after successful login
+      navigate("/", { replace: true });
     } catch (error) {
       // Error toast is handled in the auth store
     } finally {

@@ -13,6 +13,12 @@ export const useAuthStore = create(
       isCheckingAuth: true,
       onlineUsers: [],
 
+      clearAuth: () => {
+        set({ authUser: null });
+        // Clear persisted state
+        localStorage.removeItem('auth-storage');
+      },
+
       checkAuth: async () => {
         try {
           const res = await axiosInstance.get("/auth/check");
@@ -66,37 +72,34 @@ export const useAuthStore = create(
       logout: async () => {
         try {
           await axiosInstance.post("/auth/logout");
-          set({ authUser: null });
-          toast.success("Logged out successfully");
         } catch (error) {
           console.error("Logout error:", error);
-          toast.error(error.response?.data?.message || "Logout failed");
+        } finally {
+          set({ authUser: null });
+          // Clear persisted state
+          localStorage.removeItem('auth-storage');
         }
       },
 
       updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
         try {
-          const res = await axiosInstance.put("/auth/update-profile", data);
+          const res = await axiosInstance.put("/auth/update", data);
           if (res.data) {
             set({ authUser: res.data });
+            toast.success("Profile updated successfully");
           }
-          return res.data;
         } catch (error) {
-          console.error("Error updating profile:", error);
-          throw error;
+          console.error("Update profile error:", error);
+          toast.error(error.response?.data?.message || "Failed to update profile");
         } finally {
           set({ isUpdatingProfile: false });
         }
       },
-
-      clearAuth: () => {
-        set({ authUser: null });
-        document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      }
     }),
     {
       name: "auth-storage",
+      // Only persist the authUser
       partialize: (state) => ({ authUser: state.authUser }),
     }
   )

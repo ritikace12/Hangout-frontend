@@ -10,11 +10,17 @@ import SignUpPage from "./pages/SignUpPage";
 import ProfilePage from "./pages/ProfilePage";
 import PrivateRoute from "./components/PrivateRoute";
 import ServerStatus from "./components/ServerStatus";
+import { useEffect } from "react";
 
 const App = () => {
-  const { authUser } = useAuthStore();
+  const { authUser, clearAuth } = useAuthStore();
   const { isDarkMode } = useThemeStore();
   const location = useLocation();
+
+  // Clear auth state on app initialization
+  useEffect(() => {
+    clearAuth();
+  }, []);
 
   // If not authenticated and not already on login or signup page, redirect to login
   if (!authUser && location.pathname !== '/login' && location.pathname !== '/signup') {
