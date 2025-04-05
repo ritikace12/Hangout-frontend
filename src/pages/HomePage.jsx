@@ -110,7 +110,7 @@ const HomePage = () => {
     socketRef.current.on("connect", () => {
       console.log("Socket connected");
       socketRef.current.emit("setup", {
-        userId: authUser._id,
+        _id: authUser._id,
         connectionId: socketRef.current.id
       });
     });
@@ -133,6 +133,7 @@ const HomePage = () => {
 
     // Message events
     socketRef.current.on("message-received", (newMessage) => {
+      console.log("Message received:", newMessage);
       if (selectedUser && newMessage.senderId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -144,6 +145,7 @@ const HomePage = () => {
     });
 
     socketRef.current.on("message-sent", (newMessage) => {
+      console.log("Message sent:", newMessage);
       if (selectedUser && newMessage.receiverId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -155,6 +157,7 @@ const HomePage = () => {
     });
 
     socketRef.current.on("message-status", ({ messageId, status, receiverId }) => {
+      console.log("Message status update:", { messageId, status, receiverId });
       setMessages(prev => prev.map(msg => {
         if (msg._id === messageId) {
           return { ...msg, status };
@@ -172,10 +175,12 @@ const HomePage = () => {
 
     // User status events
     socketRef.current.on("online-users", (users) => {
+      console.log("Online users update:", users);
       setOnlineUsers(users);
     });
 
     socketRef.current.on("typing-status", ({ userId, isTyping }) => {
+      console.log("Typing status update:", { userId, isTyping });
       if (selectedUser?._id === userId) {
         setIsUserTyping(isTyping);
       }
@@ -238,6 +243,7 @@ const HomePage = () => {
       });
 
       const newMessage = response.data;
+      console.log("Message sent successfully:", newMessage);
       
       // Update messages state with the actual message from server
       setMessages(prev => prev.map(msg => 
