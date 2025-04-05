@@ -90,13 +90,13 @@ const HomePage = () => {
     // Get token from localStorage
     const token = localStorage.getItem("token");
     
-    if (!token) {
-      console.error("No token found, redirecting to login");
+    if (!token || !authUser?._id) {
+      console.error("No token or user ID found, redirecting to login");
       navigate("/login");
       return;
     }
     
-    console.log("Initializing socket with token:", token.substring(0, 10) + "...");
+    console.log("Initializing socket with user ID:", authUser._id);
     
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
@@ -119,6 +119,8 @@ const HomePage = () => {
     socketRef.current.on("connect", () => {
       console.log("Socket connected with ID:", socketRef.current.id);
       console.log("Current user ID:", authUser._id);
+      
+      // Emit setup event with user data
       socketRef.current.emit("setup", {
         _id: authUser._id,
         connectionId: socketRef.current.id
@@ -227,15 +229,34 @@ const HomePage = () => {
 
   // Initialize socket only after authentication is verified
   useEffect(() => {
-    if (authUser) {
-      initializeSocket();
-    }
+    const initializeSocketWithAuth = async () => {
+      try {
+        // Verify auth first
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated || !authUser?._id) {
+          console.log("Not authenticated or no user ID, redirecting to login");
+          navigate("/login");
+          return;
+        }
+
+        // Initialize socket only if we have a valid user
+        if (authUser._id) {
+          initializeSocket();
+        }
+      } catch (error) {
+        console.error("Error initializing socket:", error);
+        navigate("/login");
+      }
+    };
+
+    initializeSocketWithAuth();
+
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, [authUser, initializeSocket]);
+  }, [authUser, initializeSocket, checkAuth, navigate]);
 
   // Check socket connection periodically
   useEffect(() => {
