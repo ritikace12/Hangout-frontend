@@ -23,7 +23,7 @@ const LoginPage = () => {
     try {
       const success = await login(formData);
       if (success) {
-        navigate("/", { replace: true });
+        navigate("/");
       }
     } catch (error) {
       // Error toast is handled in the auth store

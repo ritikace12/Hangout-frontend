@@ -10,7 +10,6 @@ export const useAuthStore = create(
       isSigningUp: false,
       isLoggingIn: false,
       isUpdatingProfile: false,
-      isCheckingAuth: false,
       onlineUsers: [],
 
       clearAuth: () => {

@@ -13,12 +13,8 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
-            // Clear auth state
-            useAuthStore.getState().clearAuth();
-            // Redirect to login
-            window.location.href = '/login';
-        }
+        // Don't automatically redirect on 401 errors
+        // Just return the error to be handled by the component
         return Promise.reject(error);
     }
 );
