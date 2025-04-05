@@ -14,6 +14,8 @@ export const useAuthStore = create(
 
       clearAuth: () => {
         set({ authUser: null });
+        // Clear token from localStorage
+        localStorage.removeItem("token");
       },
 
       checkAuth: async () => {
@@ -28,6 +30,7 @@ export const useAuthStore = create(
           // If we get a 401, it means we're not authenticated
           if (error.response?.status === 401) {
             set({ authUser: null });
+            localStorage.removeItem("token");
           }
           return false;
         }
@@ -39,6 +42,10 @@ export const useAuthStore = create(
           const res = await axiosInstance.post("/auth/signup", data);
           if (res.data) {
             set({ authUser: res.data });
+            // Store token if provided
+            if (res.data.token) {
+              localStorage.setItem("token", res.data.token);
+            }
             toast.success("Account created successfully");
             return true;
           }
@@ -58,6 +65,10 @@ export const useAuthStore = create(
           const res = await axiosInstance.post("/auth/login", data);
           if (res.data) {
             set({ authUser: res.data });
+            // Store token if provided
+            if (res.data.token) {
+              localStorage.setItem("token", res.data.token);
+            }
             toast.success("Logged in successfully");
             return true;
           }
@@ -78,6 +89,8 @@ export const useAuthStore = create(
           console.error("Logout error:", error);
         } finally {
           set({ authUser: null });
+          // Clear token from localStorage
+          localStorage.removeItem("token");
         }
       },
 

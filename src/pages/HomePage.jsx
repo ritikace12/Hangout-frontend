@@ -86,15 +86,24 @@ const HomePage = () => {
       socketRef.current.disconnect();
     }
 
+    // Get token from localStorage
+    const token = localStorage.getItem("token");
+    
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
       auth: {
-        token: localStorage.getItem("token")
+        token: token
       },
       query: {
         userId: authUser._id,
         connectionId: Date.now().toString()
-      }
+      },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
     });
 
     // Connection events

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
@@ -13,8 +13,15 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { login, authUser } = useAuthStore();
   const { isDarkMode } = useThemeStore();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (authUser) {
+      navigate("/");
+    }
+  }, [authUser, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,6 +34,7 @@ const LoginPage = () => {
       }
     } catch (error) {
       // Error toast is handled in the auth store
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -61,19 +69,32 @@ const LoginPage = () => {
             <label htmlFor="password" className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Password
             </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className={`w-full p-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
-                isDarkMode 
-                  ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-teal-500' 
-                  : 'bg-white border-gray-200 text-black placeholder-gray-500 focus:ring-lime-500'
-              }`}
-              placeholder="Enter your password"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className={`w-full p-2 rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-teal-500' 
+                    : 'bg-white border-gray-200 text-black placeholder-gray-500 focus:ring-lime-500'
+                }`}
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                ) : (
+                  <Eye className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                )}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

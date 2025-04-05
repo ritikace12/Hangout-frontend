@@ -14,6 +14,13 @@ axiosInstance.interceptors.request.use(
     (config) => {
         // Ensure credentials are included
         config.withCredentials = true;
+        
+        // Get token from localStorage if available
+        const token = localStorage.getItem("token");
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        
         return config;
     },
     (error) => {
@@ -25,8 +32,16 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
-        // Don't automatically redirect on 401 errors
-        // Just return the error to be handled by the component
+        // Handle 401 errors
+        if (error.response && error.response.status === 401) {
+            // Clear auth state on 401
+            const authStore = useAuthStore.getState();
+            authStore.clearAuth();
+            
+            // Don't redirect here - let components handle it
+            console.log("Authentication failed, cleared auth state");
+        }
+        
         return Promise.reject(error);
     }
 );
