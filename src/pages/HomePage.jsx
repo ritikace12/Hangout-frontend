@@ -89,6 +89,14 @@ const HomePage = () => {
     // Get token from localStorage
     const token = localStorage.getItem("token");
     
+    if (!token) {
+      console.error("No token found, redirecting to login");
+      navigate("/login");
+      return;
+    }
+    
+    console.log("Initializing socket with token:", token.substring(0, 10) + "...");
+    
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
       auth: {
@@ -119,6 +127,7 @@ const HomePage = () => {
     socketRef.current.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
       if (error.message.includes("unauthorized")) {
+        console.error("Socket unauthorized, redirecting to login");
         navigate("/login");
       } else {
         toast.error("Connection error. Attempting to reconnect...");
@@ -128,6 +137,7 @@ const HomePage = () => {
     socketRef.current.on("disconnect", (reason) => {
       console.log("Socket disconnected:", reason);
       if (reason === "io server disconnect") {
+        console.log("Server disconnected, attempting to reconnect...");
         socketRef.current.connect();
       }
     });
@@ -230,6 +240,25 @@ const HomePage = () => {
 
     return () => clearInterval(checkSocketConnection);
   }, []);
+
+  // Check authentication status periodically
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await axiosInstance.get("/api/auth/check");
+        console.log("Auth check successful:", response.data);
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        if (error.response?.status === 401) {
+          console.error("Authentication failed, redirecting to login");
+          navigate("/login");
+        }
+      }
+    };
+
+    const authCheckInterval = setInterval(checkAuthStatus, 60000); // Check every minute
+    return () => clearInterval(authCheckInterval);
+  }, [navigate]);
 
   useEffect(() => {
     const loadLastMessages = async () => {
