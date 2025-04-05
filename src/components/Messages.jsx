@@ -8,6 +8,7 @@ import { FiCheck, FiCheckCircle } from "react-icons/fi";
 const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
   // Validate message object
   if (!message || typeof message !== 'object') {
+    console.warn("Invalid message object:", message);
     return null;
   }
 
@@ -20,6 +21,21 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
     createdAt: message.createdAt || new Date().toISOString()
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'sent':
+        return <FiCheck className="w-4 h-4" />;
+      case 'delivered':
+        return <FiCheck className="w-4 h-4" />;
+      case 'read':
+        return <FiCheckCircle className="w-4 h-4 text-blue-500" />;
+      case 'sending':
+        return <LoadingSpinner size="sm" />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       className={`flex items-end gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
@@ -30,67 +46,28 @@ const Message = memo(({ message, isOwnMessage, authUser, isDarkMode }) => {
         className="w-8 h-8 rounded-full object-cover"
       />
 
-      <div
-        className={`
-          max-w-[70%] rounded-lg p-3
-          ${isOwnMessage 
-            ? isDarkMode 
-              ? 'bg-teal-500 text-white rounded-tr-none' 
-              : 'bg-lime-500 text-white rounded-tr-none'
-            : isDarkMode
-              ? 'bg-gray-800 text-white rounded-tl-none'
-              : 'bg-gray-100 text-black rounded-tl-none'
-          }
-        `}
-      >
-        {safeMessage.text && (
-          <p className="text-sm">{safeMessage.text}</p>
-        )}
-        {safeMessage.image && (
-          <img
-            src={safeMessage.image}
-            alt="Shared"
-            className="max-w-full rounded-lg mt-2"
-            loading="lazy"
-          />
-        )}
-        <div className="flex items-center justify-between mt-1">
-          <p className={`text-xs ${
-            safeMessage.senderId._id === authUser._id
-              ? isDarkMode
-                ? 'text-blue-200'
-                : 'text-blue-100'
+      <div className={`flex flex-col max-w-[70%] ${isOwnMessage ? "items-end" : "items-start"}`}>
+        <div
+          className={`flex flex-col gap-2 ${
+            isOwnMessage
+              ? "bg-blue-500 text-white"
               : isDarkMode
-              ? 'text-gray-400'
-              : 'text-gray-500'
-          }`}>
-            {formatDistanceToNow(new Date(safeMessage.createdAt), { addSuffix: true })}
-          </p>
-          {safeMessage.senderId._id === authUser._id && (
-            <div className="flex items-center ml-2">
-              {safeMessage.status === "sending" && (
-                <span className="text-xs">Sending...</span>
-              )}
-              {safeMessage.status === "sent" && (
-                <FiCheck className="w-3 h-3" />
-              )}
-              {safeMessage.status === "delivered" && (
-                <FiCheck className="w-3 h-3" />
-              )}
-              {safeMessage.status === "read" && (
-                <FiCheckCircle className="w-3 h-3 text-blue-300" />
-              )}
-              {safeMessage.status === "failed" && (
-                <span className="text-xs text-red-500">Failed</span>
-              )}
-              {safeMessage.status === "queued" && (
-                <span className="text-xs text-gray-400">Queued</span>
-              )}
-              {safeMessage.status === "offline" && (
-                <span className="text-xs text-gray-400">Will deliver when online</span>
-              )}
-            </div>
+              ? "bg-gray-700 text-white"
+              : "bg-gray-100 text-gray-900"
+          } rounded-lg px-4 py-2`}
+        >
+          {safeMessage.text && <p>{safeMessage.text}</p>}
+          {safeMessage.image && (
+            <img
+              src={safeMessage.image}
+              alt="Message attachment"
+              className="max-w-full rounded-lg"
+            />
           )}
+        </div>
+        <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+          <span>{formatDistanceToNow(new Date(safeMessage.createdAt), { addSuffix: true })}</span>
+          {isOwnMessage && getStatusIcon(safeMessage.status)}
         </div>
       </div>
     </div>

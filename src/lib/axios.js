@@ -35,20 +35,27 @@ axiosInstance.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
+        
         // Handle 401 Unauthorized errors
-        if (error.response && error.response.status === 401) {
-            console.error("Authentication error:", error);
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
             
-            // Clear auth state in store
-            const authStore = useAuthStore.getState();
-            authStore.setAuthUser(null);
-            
-            // Clear token from localStorage
-            localStorage.removeItem("token");
-            
-            // Don't redirect automatically - let components handle it
-            // This prevents redirect loops and allows components to show appropriate UI
+            try {
+                // Clear auth state in store
+                const authStore = useAuthStore.getState();
+                authStore.setAuthUser(null);
+                
+                // Clear token from localStorage
+                localStorage.removeItem("token");
+                
+                // Redirect to login page
+                window.location.href = "/login";
+            } catch (refreshError) {
+                console.error("Error handling 401:", refreshError);
+                return Promise.reject(refreshError);
+            }
         }
         
         return Promise.reject(error);

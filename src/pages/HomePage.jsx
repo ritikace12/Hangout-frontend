@@ -83,6 +83,7 @@ const HomePage = () => {
   // Improved socket initialization
   const initializeSocket = useCallback(() => {
     if (socketRef.current) {
+      console.log("Disconnecting existing socket");
       socketRef.current.disconnect();
     }
 
@@ -108,7 +109,7 @@ const HomePage = () => {
       },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000
@@ -131,6 +132,13 @@ const HomePage = () => {
         navigate("/login");
       } else {
         toast.error("Connection error. Attempting to reconnect...");
+        // Attempt to reconnect after a delay
+        setTimeout(() => {
+          if (socketRef.current) {
+            console.log("Attempting to reconnect socket...");
+            socketRef.current.connect();
+          }
+        }, 5000);
       }
     });
 
