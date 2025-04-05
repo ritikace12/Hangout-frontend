@@ -25,6 +25,10 @@ export const useAuthStore = create(
           }
           return false;
         } catch (error) {
+          // If we get a 401, it means we're not authenticated
+          if (error.response?.status === 401) {
+            set({ authUser: null });
+          }
           return false;
         }
       },

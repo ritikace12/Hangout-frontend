@@ -8,9 +8,10 @@ import toast from "react-hot-toast";
 import { useThemeStore } from "../store/useThemeStore";
 import axiosInstance from "../lib/axios";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { useNavigate } from "react-router-dom";
 
 const HomePage = () => {
-  const { authUser } = useAuthStore();
+  const { authUser, checkAuth } = useAuthStore();
   const { users, getUsers, isUserLoading } = useChatStore();
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -23,6 +24,7 @@ const HomePage = () => {
   const [lastMessages, setLastMessages] = useState({});
   const { isDarkMode } = useThemeStore();
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -32,6 +34,17 @@ const HomePage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const isAuthenticated = await checkAuth();
+      if (!isAuthenticated) {
+        navigate("/login");
+      }
+    };
+    verifyAuth();
+  }, [checkAuth, navigate]);
 
   useEffect(() => {
     if (authUser?._id) {
@@ -56,12 +69,16 @@ const HomePage = () => {
       setMessages(Array.isArray(uniqueMessages) ? uniqueMessages : []);
     } catch (error) {
       console.error("Error loading messages:", error);
-      toast.error(error.response?.data?.message || "Failed to load messages");
+      if (error.response?.status === 401) {
+        navigate("/login");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to load messages");
+      }
     } finally {
       setIsLoadingMessages(false);
       setTimeout(scrollToBottom, 100);
     }
-  }, [scrollToBottom]);
+  }, [scrollToBottom, navigate]);
 
   // Improved socket initialization
   const initializeSocket = useCallback(() => {
@@ -70,6 +87,7 @@ const HomePage = () => {
     }
 
     socketRef.current = io(import.meta.env.VITE_API_URL, {
+      withCredentials: true,
       auth: {
         token: localStorage.getItem("token")
       },
@@ -90,7 +108,11 @@ const HomePage = () => {
 
     socketRef.current.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
-      toast.error("Connection error. Attempting to reconnect...");
+      if (error.message.includes("unauthorized")) {
+        navigate("/login");
+      } else {
+        toast.error("Connection error. Attempting to reconnect...");
+      }
     });
 
     socketRef.current.on("disconnect", (reason) => {
@@ -153,10 +175,14 @@ const HomePage = () => {
     // Error handling
     socketRef.current.on("error", (error) => {
       console.error("Socket error:", error);
-      toast.error("An error occurred. Please refresh the page.");
+      if (error.message?.includes("unauthorized")) {
+        navigate("/login");
+      } else {
+        toast.error("An error occurred. Please refresh the page.");
+      }
     });
 
-  }, [authUser, selectedUser]);
+  }, [authUser, selectedUser, navigate]);
 
   useEffect(() => {
     if (authUser) {
@@ -176,13 +202,16 @@ const HomePage = () => {
         setLastMessages(res.data);
       } catch (error) {
         console.error("Error loading last messages:", error);
+        if (error.response?.status === 401) {
+          navigate("/login");
+        }
       }
     };
 
     if (authUser?._id) {
       loadLastMessages();
     }
-  }, [authUser]);
+  }, [authUser, navigate]);
 
   // Improved message sending
   const handleSendMessage = async (tempMessage, formData, tempMessageId) => {
@@ -215,10 +244,14 @@ const HomePage = () => {
       scrollToBottom();
     } catch (error) {
       console.error("Error sending message:", error);
-      toast.error("Failed to send message");
-      setMessages(prev => prev.map(msg => 
-        msg._id === tempMessageId ? { ...msg, status: "failed" } : msg
-      ));
+      if (error.response?.status === 401) {
+        navigate("/login");
+      } else {
+        toast.error("Failed to send message");
+        setMessages(prev => prev.map(msg => 
+          msg._id === tempMessageId ? { ...msg, status: "failed" } : msg
+        ));
+      }
     }
   };
 
