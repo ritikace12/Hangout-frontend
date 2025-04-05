@@ -193,6 +193,7 @@ const HomePage = () => {
 
   }, [authUser, selectedUser, navigate]);
 
+  // Initialize socket only after authentication is verified
   useEffect(() => {
     if (authUser) {
       initializeSocket();
