@@ -108,7 +108,8 @@ const HomePage = () => {
 
     // Connection events
     socketRef.current.on("connect", () => {
-      console.log("Socket connected");
+      console.log("Socket connected with ID:", socketRef.current.id);
+      console.log("Current user ID:", authUser._id);
       socketRef.current.emit("setup", {
         _id: authUser._id,
         connectionId: socketRef.current.id
@@ -133,7 +134,11 @@ const HomePage = () => {
 
     // Message events
     socketRef.current.on("message-received", (newMessage) => {
-      console.log("Message received:", newMessage);
+      console.log("Message received event:", {
+        newMessage,
+        selectedUser,
+        currentMessages: messages
+      });
       if (selectedUser && newMessage.senderId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -145,7 +150,11 @@ const HomePage = () => {
     });
 
     socketRef.current.on("message-sent", (newMessage) => {
-      console.log("Message sent:", newMessage);
+      console.log("Message sent event:", {
+        newMessage,
+        selectedUser,
+        currentMessages: messages
+      });
       if (selectedUser && newMessage.receiverId === selectedUser._id) {
         setMessages(prev => {
           const exists = prev.some(msg => msg._id === newMessage._id);
@@ -196,7 +205,7 @@ const HomePage = () => {
       }
     });
 
-  }, [authUser, selectedUser, navigate]);
+  }, [authUser, selectedUser, navigate, messages]);
 
   // Initialize socket only after authentication is verified
   useEffect(() => {
@@ -209,6 +218,18 @@ const HomePage = () => {
       }
     };
   }, [authUser, initializeSocket]);
+
+  // Check socket connection periodically
+  useEffect(() => {
+    const checkSocketConnection = setInterval(() => {
+      if (socketRef.current && !socketRef.current.connected) {
+        console.log("Socket disconnected, attempting to reconnect...");
+        socketRef.current.connect();
+      }
+    }, 5000);
+
+    return () => clearInterval(checkSocketConnection);
+  }, []);
 
   useEffect(() => {
     const loadLastMessages = async () => {
