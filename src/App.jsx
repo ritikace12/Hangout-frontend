@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
@@ -10,39 +10,10 @@ import SignUpPage from "./pages/SignUpPage";
 import ProfilePage from "./pages/ProfilePage";
 import PrivateRoute from "./components/PrivateRoute";
 import ServerStatus from "./components/ServerStatus";
-import { useEffect, useState } from "react";
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { authUser } = useAuthStore();
   const { isDarkMode } = useThemeStore();
-  const location = useLocation();
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Check auth status on mount
-  useEffect(() => {
-    const initialize = async () => {
-      await checkAuth();
-      setIsInitialized(true);
-    };
-    initialize();
-  }, [checkAuth]);
-
-  // Show loading state while checking auth
-  if (!isInitialized || isCheckingAuth) {
-    return (
-      <div className={`h-screen flex items-center justify-center ${isDarkMode ? 'bg-black text-white' : 'bg-white text-black'}`}>
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Loading...</h2>
-          <p className="text-gray-500">Please wait while we check your authentication status</p>
-        </div>
-      </div>
-    );
-  }
-
-  // If not authenticated and not already on login or signup page, redirect to login
-  if (!authUser && location.pathname !== '/login' && location.pathname !== '/signup') {
-    return <Navigate to="/login" replace />;
-  }
 
   return (
     <ServerStatus>
@@ -69,7 +40,7 @@ const App = () => {
                   </PrivateRoute>
                 }
               />
-              {/* Redirect any unknown routes to login if not authenticated, home if authenticated */}
+              {/* Redirect any unknown routes to home if authenticated, login if not */}
               <Route
                 path="*"
                 element={

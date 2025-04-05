@@ -10,12 +10,11 @@ export const useAuthStore = create(
       isSigningUp: false,
       isLoggingIn: false,
       isUpdatingProfile: false,
-      isCheckingAuth: true,
+      isCheckingAuth: false,
       onlineUsers: [],
 
       clearAuth: () => {
         set({ authUser: null });
-        localStorage.removeItem('auth-storage');
       },
 
       checkAuth: async () => {
@@ -25,13 +24,9 @@ export const useAuthStore = create(
             set({ authUser: res.data });
             return true;
           }
-          set({ authUser: null });
           return false;
         } catch (error) {
-          set({ authUser: null });
           return false;
-        } finally {
-          set({ isCheckingAuth: false });
         }
       },
 
@@ -80,7 +75,6 @@ export const useAuthStore = create(
           console.error("Logout error:", error);
         } finally {
           set({ authUser: null });
-          localStorage.removeItem('auth-storage');
         }
       },
 

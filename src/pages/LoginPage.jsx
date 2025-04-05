@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
@@ -13,19 +13,8 @@ const LoginPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, authUser, checkAuth } = useAuthStore();
+  const { login } = useAuthStore();
   const { isDarkMode } = useThemeStore();
-
-  // Check auth status on mount
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      const isAuthenticated = await checkAuth();
-      if (isAuthenticated) {
-        navigate("/", { replace: true });
-      }
-    };
-    checkAuthStatus();
-  }, [checkAuth, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
