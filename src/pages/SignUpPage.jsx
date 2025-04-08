@@ -4,6 +4,7 @@ import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import { Eye, EyeOff, Lock, Mail, MessageSquare, User } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
+import logo from "../assets/logo.png";
 
 const SignUpPage = () => {
   const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ const SignUpPage = () => {
       <div className={`w-full max-w-md p-8 rounded-lg shadow-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="flex flex-col items-center mb-6">
           <img
-            src="/src/assets/logo.png"
+            src={logo}
             alt="Hangout"
             className="w-16 h-16 object-contain mb-4"
           />
