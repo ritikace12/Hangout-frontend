@@ -86,97 +86,47 @@ const HomePage = () => {
       socketRef.current.disconnect();
     }
 
-    // Get token from localStorage
     const token = localStorage.getItem("token");
-    
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     socketRef.current = io(import.meta.env.VITE_API_URL, {
       withCredentials: true,
-      auth: {
-        token: token
-      },
+      auth: { token },
       query: {
-        userId: authUser._id,
-        connectionId: Date.now().toString()
+        userId: authUser?._id,
+        connectionId: Date.now().toString(),
       },
-      transports: ['websocket', 'polling'],
-      reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000
+      timeout: 10000,
     });
 
-    // Connection events
     socketRef.current.on("connect", () => {
       console.log("Socket connected");
-      socketRef.current.emit("setup", {
-        _id: authUser._id,
-        connectionId: socketRef.current.id
-      });
     });
 
     socketRef.current.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
-      if (error.message.includes("unauthorized")) {
+      if (error.message === "Unauthorized") {
         navigate("/login");
       } else {
-        toast.error("Connection error. Attempting to reconnect...");
+        toast.error("Failed to connect to chat server");
       }
     });
 
-    socketRef.current.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      if (reason === "io server disconnect") {
-        socketRef.current.connect();
-      }
+    socketRef.current.on("message", (message) => {
+      setMessages((prev) => [...prev, message]);
     });
 
-    // Message events
-    socketRef.current.on("message-received", (newMessage) => {
-      console.log("Message received:", newMessage);
-      if (selectedUser && newMessage.senderId === selectedUser._id) {
-        setMessages(prev => {
-          const exists = prev.some(msg => msg._id === newMessage._id);
-          if (exists) return prev;
-          return [...prev, newMessage];
-        });
-        scrollToBottom();
-      }
-    });
-
-    socketRef.current.on("message-sent", (newMessage) => {
-      console.log("Message sent:", newMessage);
-      if (selectedUser && newMessage.receiverId === selectedUser._id) {
-        setMessages(prev => {
-          const exists = prev.some(msg => msg._id === newMessage._id);
-          if (exists) return prev;
-          return [...prev, newMessage];
-        });
-        scrollToBottom();
-      }
-    });
-
-    socketRef.current.on("message-status", ({ messageId, status, receiverId }) => {
-      console.log("Message status update:", { messageId, status, receiverId });
-      setMessages(prev => prev.map(msg => {
-        if (msg._id === messageId) {
-          return { ...msg, status };
-        }
-        return msg;
-      }));
-
-      if (status === "queued") {
-        toast("Message will be delivered when the user comes online", {
-          icon: 'ℹ️',
-          duration: 3000,
-        });
-      }
-    });
-
-    // User status events
-    socketRef.current.on("online-users", (users) => {
-      console.log("Online users update:", users);
-      setOnlineUsers(users);
+    socketRef.current.on("userStatus", ({ userId, isOnline }) => {
+      setOnlineUsers((prev) =>
+        prev.map((user) =>
+          user._id === userId ? { ...user, isOnline } : user
+        )
+      );
     });
 
     socketRef.current.on("typing-status", ({ userId, isTyping }) => {
@@ -186,7 +136,6 @@ const HomePage = () => {
       }
     });
 
-    // Error handling
     socketRef.current.on("error", (error) => {
       console.error("Socket error:", error);
       if (error.message?.includes("unauthorized")) {

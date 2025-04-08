@@ -16,13 +16,11 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              isDarkMode 
-                ? 'bg-teal-500 group-hover:bg-teal-600' 
-                : 'bg-lime-500 group-hover:bg-lime-600'
-            }`}>
-              <span className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-white'}`}>H</span>
-            </div>
+            <img
+              src="/src/assets/logo.png"
+              alt="Hangout"
+              className="w-10 h-10 object-contain"
+            />
             <span className={`ml-2 text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>Hangout</span>
           </Link>
 
@@ -31,48 +29,53 @@ const Navbar = () => {
               <>
                 <Link
                   to="/profile"
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-gray-300 hover:text-teal-400 hover:bg-gray-800' 
-                      : 'text-gray-700 hover:text-lime-600 hover:bg-gray-100'
+                  className={`flex items-center gap-2 ${
+                    isDarkMode
+                      ? "text-gray-300 hover:text-white"
+                      : "text-gray-600 hover:text-black"
                   }`}
                 >
-                  Profile
+                  <img
+                    src={authUser.profilePic || "/avatar.jpg"}
+                    alt={authUser.fullName}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                  <span className="hidden sm:inline">{authUser.fullName}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-gray-300 hover:text-teal-400 hover:bg-gray-800' 
-                      : 'text-gray-700 hover:text-lime-600 hover:bg-gray-100'
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isDarkMode
+                      ? "bg-teal-500 text-white hover:bg-teal-600"
+                      : "bg-lime-500 text-white hover:bg-lime-600"
                   }`}
                 >
-                  <LogOut className="w-5 h-5" />
+                  Logout
                 </button>
               </>
             ) : (
-              <>
+              <div className="hidden sm:flex items-center gap-4">
                 <Link
                   to="/login"
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-gray-300 hover:text-teal-400 hover:bg-gray-800' 
-                      : 'text-gray-700 hover:text-lime-600 hover:bg-gray-100'
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isDarkMode
+                      ? "bg-teal-500 text-white hover:bg-teal-600"
+                      : "bg-lime-500 text-white hover:bg-lime-600"
                   }`}
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className={`px-3 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'text-gray-300 hover:text-teal-400 hover:bg-gray-800' 
-                      : 'text-gray-700 hover:text-lime-600 hover:bg-gray-100'
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isDarkMode
+                      ? "bg-gray-800 text-white hover:bg-gray-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200"
                   }`}
                 >
-                  Sign up
+                  Sign Up
                 </Link>
-              </>
+              </div>
             )}
             <button
               onClick={toggleTheme}

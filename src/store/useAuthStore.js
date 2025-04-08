@@ -14,12 +14,17 @@ export const useAuthStore = create(
 
       clearAuth: () => {
         set({ authUser: null });
-        // Clear token from localStorage
         localStorage.removeItem("token");
       },
 
       checkAuth: async () => {
         try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            set({ authUser: null });
+            return false;
+          }
+
           const res = await axiosInstance.get("/auth/check");
           if (res.data) {
             set({ authUser: res.data });
@@ -27,11 +32,9 @@ export const useAuthStore = create(
           }
           return false;
         } catch (error) {
-          // If we get a 401, it means we're not authenticated
-          if (error.response?.status === 401) {
-            set({ authUser: null });
-            localStorage.removeItem("token");
-          }
+          console.error("Auth check error:", error);
+          set({ authUser: null });
+          localStorage.removeItem("token");
           return false;
         }
       },
@@ -42,7 +45,6 @@ export const useAuthStore = create(
           const res = await axiosInstance.post("/auth/signup", data);
           if (res.data) {
             set({ authUser: res.data });
-            // Store token if provided
             if (res.data.token) {
               localStorage.setItem("token", res.data.token);
             }
@@ -65,7 +67,6 @@ export const useAuthStore = create(
           const res = await axiosInstance.post("/auth/login", data);
           if (res.data) {
             set({ authUser: res.data });
-            // Store token if provided
             if (res.data.token) {
               localStorage.setItem("token", res.data.token);
             }
@@ -89,7 +90,6 @@ export const useAuthStore = create(
           console.error("Logout error:", error);
         } finally {
           set({ authUser: null });
-          // Clear token from localStorage
           localStorage.removeItem("token");
         }
       },
@@ -97,7 +97,7 @@ export const useAuthStore = create(
       updateProfile: async (data) => {
         set({ isUpdatingProfile: true });
         try {
-          const res = await axiosInstance.put("/auth/update", data);
+          const res = await axiosInstance.put("/auth/update-profile", data);
           if (res.data) {
             set({ authUser: res.data });
             toast.success("Profile updated successfully");

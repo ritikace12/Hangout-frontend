@@ -34,9 +34,16 @@ const SignUpPage = () => {
   return (
     <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-white'}`}>
       <div className={`w-full max-w-md p-8 rounded-lg shadow-lg ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
-        <h2 className={`text-2xl font-bold mb-6 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
-          Create Account
-        </h2>
+        <div className="flex flex-col items-center mb-6">
+          <img
+            src="/src/assets/logo.png"
+            alt="Hangout"
+            className="w-16 h-16 object-contain mb-4"
+          />
+          <h2 className={`text-2xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
+            Create Account
+          </h2>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="fullName" className={`block text-sm font-medium mb-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>

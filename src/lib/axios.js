@@ -32,14 +32,20 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
+        const originalRequest = error.config;
+        
         // Handle 401 errors
-        if (error.response && error.response.status === 401) {
-            // Clear auth state on 401
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            // Clear auth state
             const authStore = useAuthStore.getState();
             authStore.clearAuth();
             
-            // Don't redirect here - let components handle it
-            console.log("Authentication failed, cleared auth state");
+            // If we're not already on the login page, redirect to login
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
         }
         
         return Promise.reject(error);
