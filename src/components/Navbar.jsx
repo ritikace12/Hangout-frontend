@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
 import { useThemeStore } from "../store/useThemeStore";
 import { LogOut, Moon, Sun } from "lucide-react";
+import logo from "../assets/logo.png";
 
 const Navbar = () => {
   const { authUser, logout } = useAuthStore();
@@ -17,7 +18,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center">
             <img
-              src="/src/assets/logo.png"
+              src={logo}
               alt="Hangout"
               className="w-10 h-10 object-contain"
             />

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axiosInstance from '../lib/axios';
 import { useThemeStore } from '../store/useThemeStore';
 import LoadingSpinner from './LoadingSpinner';
+import logo from "../assets/logo.png";
 
 const ServerStatus = ({ children }) => {
   const [isServerUp, setIsServerUp] = useState(false);
@@ -40,7 +41,7 @@ const ServerStatus = ({ children }) => {
           <div className="flex flex-col items-center space-y-4">
             <div className={`p-4 rounded-full ${isDarkMode ? 'bg-teal-500/20' : 'bg-lime-500/20'}`}>
               <img
-                src="/src/assets/logo.png"
+                src={logo}
                 alt="Hangout"
                 className="w-16 h-16 object-contain"
               />
